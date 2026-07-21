@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>쇼핑 리스트</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+
+    .app {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      width: 100%;
+      max-width: 480px;
+      height: fit-content;
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      padding: 28px 24px 24px;
+      color: #fff;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .header .subtitle {
+      font-size: 13px;
+      opacity: 0.8;
+    }
+
+    .stats {
+      display: flex;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .stat {
+      background: rgba(255,255,255,0.18);
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 13px;
+    }
+
+    .stat span {
+      font-weight: 700;
+      font-size: 18px;
+      display: block;
+    }
+
+    .input-area {
+      padding: 20px 24px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      gap: 10px;
+    }
+
+    .input-area input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #e8e8e8;
+      border-radius: 12px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+      color: #333;
+    }
+
+    .input-area input:focus {
+      border-color: #667eea;
+    }
+
+    .input-area input::placeholder {
+      color: #bbb;
+    }
+
+    .btn-add {
+      padding: 12px 20px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 22px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      line-height: 1;
+    }
+
+    .btn-add:hover { opacity: 0.9; }
+    .btn-add:active { transform: scale(0.95); }
+
+    .filters {
+      display: flex;
+      gap: 8px;
+      padding: 14px 24px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .filter-btn {
+      padding: 6px 14px;
+      border: 2px solid #e8e8e8;
+      border-radius: 20px;
+      background: none;
+      font-size: 13px;
+      cursor: pointer;
+      color: #888;
+      transition: all 0.2s;
+    }
+
+    .filter-btn.active {
+      border-color: #667eea;
+      background: #667eea;
+      color: #fff;
+    }
+
+    .list {
+      padding: 8px 24px 16px;
+      min-height: 120px;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 48px 0;
+      color: #ccc;
+      font-size: 15px;
+    }
+
+    .empty .icon { font-size: 48px; display: block; margin-bottom: 12px; }
+
+    .item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid #f5f5f5;
+      animation: slideIn 0.2s ease;
+    }
+
+    .item:last-child { border-bottom: none; }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .item-check {
+      width: 24px;
+      height: 24px;
+      border: 2px solid #ddd;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    .item-check:hover { border-color: #667eea; }
+
+    .item.done .item-check {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-color: transparent;
+    }
+
+    .item.done .item-check::after {
+      content: '✓';
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .item-text {
+      flex: 1;
+      font-size: 15px;
+      color: #333;
+      transition: all 0.2s;
+      word-break: break-all;
+    }
+
+    .item.done .item-text {
+      text-decoration: line-through;
+      color: #bbb;
+    }
+
+    .btn-delete {
+      width: 30px;
+      height: 30px;
+      border: none;
+      background: none;
+      color: #ddd;
+      font-size: 18px;
+      cursor: pointer;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .btn-delete:hover {
+      background: #fff0f0;
+      color: #ff5c5c;
+    }
+
+    .footer {
+      padding: 14px 24px;
+      border-top: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .clear-btn {
+      background: none;
+      border: none;
+      color: #ff5c5c;
+      font-size: 13px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+
+    .clear-btn:hover { background: #fff0f0; }
+    .clear-btn:disabled { color: #ddd; cursor: default; }
+    .clear-btn:disabled:hover { background: none; }
+
+    .progress-text {
+      font-size: 13px;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <h1>🛒 쇼핑 리스트</h1>
+      <p class="subtitle">오늘 살 것들을 적어보세요</p>
+      <div class="stats">
+        <div class="stat"><span id="stat-total">0</span>전체</div>
+        <div class="stat"><span id="stat-done">0</span>완료</div>
+        <div class="stat"><span id="stat-left">0</span>남은 것</div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <input id="item-input" type="text" placeholder="아이템 추가..." maxlength="50" />
+      <button class="btn-add" id="add-btn" title="추가">+</button>
+    </div>
+
+    <div class="filters">
+      <button class="filter-btn active" data-filter="all">전체</button>
+      <button class="filter-btn" data-filter="active">미완료</button>
+      <button class="filter-btn" data-filter="done">완료</button>
+    </div>
+
+    <div class="list" id="list"></div>
+
+    <div class="footer">
+      <button class="clear-btn" id="clear-btn">완료 항목 삭제</button>
+      <span class="progress-text" id="progress-text"></span>
+    </div>
+  </div>
+
+  <script>
+    let items = JSON.parse(localStorage.getItem('shopping-list') || '[]');
+    let filter = 'all';
+
+    const listEl       = document.getElementById('list');
+    const inputEl      = document.getElementById('item-input');
+    const addBtn       = document.getElementById('add-btn');
+    const clearBtn     = document.getElementById('clear-btn');
+    const statTotal    = document.getElementById('stat-total');
+    const statDone     = document.getElementById('stat-done');
+    const statLeft     = document.getElementById('stat-left');
+    const progressText = document.getElementById('progress-text');
+
+    function save() {
+      localStorage.setItem('shopping-list', JSON.stringify(items));
+    }
+
+    function addItem() {
+      const text = inputEl.value.trim();
+      if (!text) { inputEl.focus(); return; }
+      items.unshift({ id: Date.now(), text, done: false });
+      inputEl.value = '';
+      save();
+      render();
+      inputEl.focus();
+    }
+
+    function toggleItem(id) {
+      items = items.map(i => i.id === id ? { ...i, done: !i.done } : i);
+      save();
+      render();
+    }
+
+    function deleteItem(id) {
+      items = items.filter(i => i.id !== id);
+      save();
+      render();
+    }
+
+    function clearDone() {
+      items = items.filter(i => !i.done);
+      save();
+      render();
+    }
+
+    function render() {
+      const total = items.length;
+      const done  = items.filter(i => i.done).length;
+      const left  = total - done;
+
+      statTotal.textContent = total;
+      statDone.textContent  = done;
+      statLeft.textContent  = left;
+      progressText.textContent = total ? `${done}/${total} 완료` : '';
+
+      clearBtn.disabled = done === 0;
+
+      const visible = items.filter(i =>
+        filter === 'all'    ? true :
+        filter === 'done'   ? i.done :
+                              !i.done
+      );
+
+      if (visible.length === 0) {
+        const msgs = {
+          all:    ['🛒', '리스트가 비어있어요'],
+          active: ['✅', '미완료 항목이 없어요!'],
+          done:   ['📝', '완료된 항목이 없어요'],
+        };
+        const [icon, msg] = msgs[filter];
+        listEl.innerHTML = `<div class="empty"><span class="icon">${icon}</span>${msg}</div>`;
+        return;
+      }
+
+      listEl.innerHTML = visible.map(item => `
+        <div class="item ${item.done ? 'done' : ''}" data-id="${item.id}">
+          <div class="item-check" onclick="toggleItem(${item.id})"></div>
+          <span class="item-text">${escapeHtml(item.text)}</span>
+          <button class="btn-delete" onclick="deleteItem(${item.id})" title="삭제">×</button>
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    addBtn.addEventListener('click', addItem);
+    inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') addItem(); });
+    clearBtn.addEventListener('click', clearDone);
+
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        filter = btn.dataset.filter;
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        render();
+      });
+    });
+
+    render();
+  </script>
+</body>
+</html>
