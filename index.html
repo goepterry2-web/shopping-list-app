@@ -278,8 +278,13 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    let items = JSON.parse(localStorage.getItem('shopping-list') || '[]');
+    const SUPABASE_URL = 'https://nrwqamzgpemlgchhvjfh.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yd3FhbXpncGVtbGdjaGh2amZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NjU3NzcsImV4cCI6MjEwMDI0MTc3N30.HxcTROCF2YdyDDVaM7QZ2s6vHNiRFVSMYjwSgtHRhUo';
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let items = [];
     let filter = 'all';
 
     const listEl       = document.getElementById('list');
@@ -291,36 +296,46 @@
     const statLeft     = document.getElementById('stat-left');
     const progressText = document.getElementById('progress-text');
 
-    function save() {
-      localStorage.setItem('shopping-list', JSON.stringify(items));
+    async function loadItems() {
+      const { data, error } = await db
+        .from('shopping_items')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) { console.error(error); return; }
+      items = data.map(row => ({ id: row.id, text: row.text, done: row.done }));
+      render();
     }
 
-    function addItem() {
+    async function addItem() {
       const text = inputEl.value.trim();
       if (!text) { inputEl.focus(); return; }
-      items.unshift({ id: Date.now(), text, done: false });
       inputEl.value = '';
-      save();
-      render();
+      const { error } = await db.from('shopping_items').insert({ text, done: false });
+      if (error) { console.error(error); return; }
+      await loadItems();
       inputEl.focus();
     }
 
-    function toggleItem(id) {
-      items = items.map(i => i.id === id ? { ...i, done: !i.done } : i);
-      save();
-      render();
+    async function toggleItem(id) {
+      const item = items.find(i => i.id === id);
+      const { error } = await db
+        .from('shopping_items')
+        .update({ done: !item.done })
+        .eq('id', id);
+      if (error) { console.error(error); return; }
+      await loadItems();
     }
 
-    function deleteItem(id) {
-      items = items.filter(i => i.id !== id);
-      save();
-      render();
+    async function deleteItem(id) {
+      const { error } = await db.from('shopping_items').delete().eq('id', id);
+      if (error) { console.error(error); return; }
+      await loadItems();
     }
 
-    function clearDone() {
-      items = items.filter(i => !i.done);
-      save();
-      render();
+    async function clearDone() {
+      const { error } = await db.from('shopping_items').delete().eq('done', true);
+      if (error) { console.error(error); return; }
+      await loadItems();
     }
 
     function render() {
@@ -378,7 +393,7 @@
       });
     });
 
-    render();
+    loadItems();
   </script>
 </body>
 </html>
